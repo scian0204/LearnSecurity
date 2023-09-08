@@ -1,5 +1,6 @@
 package com.datasolution.learnsecurity.config;
 
+import com.datasolution.learnsecurity.dto.TokenDTO;
 import com.datasolution.learnsecurity.service.UserDetailService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -24,6 +25,7 @@ public class JwtProvider {
     private final UserDetailService userDetailService;
     private String secretKey = "learnsecuritysecretkey123!@#learnsecuritysecretkey123!@#learnsecuritysecretkey123!@#";
     private final long tokenValidMillisecond = 1000L * 60 * 60;
+    private final long refreshTokenValidMillisecond = 1000L * 60 * 60 * 24 * 5;
 
     @PostConstruct
     protected void init() {
@@ -43,6 +45,21 @@ public class JwtProvider {
         return token;
     }
 
+    public String createRefreshToken(String accessToken) {
+        String userId = getUserId(accessToken);
+        Claims claims = Jwts.claims()
+                .setSubject(userId);
+        Date now = new Date();
+        String refreshToken = Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + refreshTokenValidMillisecond))
+                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .compact();
+
+        return refreshToken;
+    }
+
     public String getUserId(String token) {
         String info = Jwts.parser()
                 .setSigningKey(secretKey)
@@ -57,8 +74,9 @@ public class JwtProvider {
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
-    public String resolveToken(HttpServletRequest request) {
-        return request.getHeader("Authorization");
+    public TokenDTO resolveToken(HttpServletRequest request) {
+        TokenDTO tokenDTO = new TokenDTO(request.getHeader("Authorization"), request.getHeader("RefreshAuth"));
+        return tokenDTO;
     }
 
     public boolean validateToken(String token) {
