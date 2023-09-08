@@ -2,10 +2,12 @@ package com.datasolution.learnsecurity.controller;
 
 import com.datasolution.learnsecurity.config.JwtProvider;
 import com.datasolution.learnsecurity.dto.LoginRequest;
+import com.datasolution.learnsecurity.dto.TokenDTO;
 import com.datasolution.learnsecurity.dto.UserRequest;
 import com.datasolution.learnsecurity.entity.User;
 import com.datasolution.learnsecurity.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,6 +22,7 @@ public class UserController {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
 
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/{userId}")
     public User getUserByUserId(@PathVariable String userId) {
         return userService.getUserByUserId(userId);
@@ -32,7 +35,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public String login(LoginRequest loginRequest) {
+    public TokenDTO login(LoginRequest loginRequest) {
         String userId = loginRequest.getUserId();
         String password = loginRequest.getPassword();
 
@@ -44,7 +47,9 @@ public class UserController {
             throw new BadCredentialsException("로그인 실패 - 비밀번호가 다름");
         } else {
             User loginUser = userService.getUserByUserId(userId);
-            return jwtProvider.createToken(loginUser.getUserId(), loginUser.getRoles());
+            String accessToken = jwtProvider.createToken(loginUser.getUserId(), loginUser.getRoles());
+            TokenDTO tokenDTO = new TokenDTO(accessToken, jwtProvider.createRefreshToken(accessToken));
+            return tokenDTO;
         }
     }
 }
