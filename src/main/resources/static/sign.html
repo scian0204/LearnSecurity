@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+</head>
+<body>
+  <form action="/api/user/sign" method="POST" type="application/json">
+      ID : <input type="text" name="userId" id="userId" /> <br />
+      NM : <input type="text" name="userName" id="userName" /> <br />
+      PW : <input type="password" name="password" id="password" /> <br />
+      RL :
+      <select id="role" name="roleId">
+      </select>
+      <br />
+      <input type="submit" />
+  </form>
+
+    <script type="text/javascript">
+        const role = document.getElementById("role");
+
+        const req = new XMLHttpRequest();
+        req.onreadystatechange = () => {
+            if (req.readyState === XMLHttpRequest.DONE) {
+                if (req.status === 200) {
+                    const res = req.response;
+                    res.forEach(rl => {
+                        role.innerHTML += `<option id="${rl.roleId}" value="${rl.roleId}">${rl.roleName}</option>`
+                    })
+                }
+            }
+        }
+
+        req.open('GET', '/api/role/list');
+        req.responseType = "json";
+        req.send();
+
+    </script>
+</body>
+</html>
